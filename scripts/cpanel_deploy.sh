@@ -11,6 +11,7 @@ echo "[deploy] Fecha: $(date '+%Y-%m-%d %H:%M:%S %z')"
 PHP_HAS_PHAR=0
 PHP_HAS_PDO=0
 PHP_HAS_DOM=0
+PUBLIC_DEPLOY_PATH="${DEPLOY_PUBLIC_PATH:-}"
 
 PHP_BIN="${PHP_BIN:-php}"
 if ! command -v "$PHP_BIN" >/dev/null 2>&1; then
@@ -26,6 +27,20 @@ if "$PHP_BIN" -m 2>/dev/null | grep -qi '^PDO$'; then
 fi
 if "$PHP_BIN" -m 2>/dev/null | grep -qi '^dom$'; then
   PHP_HAS_DOM=1
+fi
+
+if [ -z "$PUBLIC_DEPLOY_PATH" ]; then
+  for candidate in \
+    "$HOME/public_html/registro.lbcchile.com" \
+    "$HOME/public_html/registro" \
+    "$HOME/public_html/registro-lbcchile" \
+    "$HOME/public_html/registro_lbcchile"
+  do
+    if [ -d "$candidate" ]; then
+      PUBLIC_DEPLOY_PATH="$candidate"
+      break
+    fi
+  done
 fi
 
 if command -v composer >/dev/null 2>&1; then
@@ -149,6 +164,43 @@ else
     ln -sfn "$APP_ROOT/storage/app/public" "$APP_ROOT/public/storage" || true
     echo "[deploy] Symlink public/storage actualizado por shell."
   fi
+fi
+
+if [ -n "$PUBLIC_DEPLOY_PATH" ]; then
+  REPO_PUBLIC_REALPATH="$(cd "$APP_ROOT/public" && pwd)"
+  TARGET_PUBLIC_REALPATH="$(cd "$PUBLIC_DEPLOY_PATH" 2>/dev/null && pwd || true)"
+
+  if [ "$TARGET_PUBLIC_REALPATH" = "$REPO_PUBLIC_REALPATH" ]; then
+    echo "[deploy] Document root ya apunta a $REPO_PUBLIC_REALPATH"
+  else
+    echo "[deploy] Publicando contenido web en $PUBLIC_DEPLOY_PATH"
+    mkdir -p "$PUBLIC_DEPLOY_PATH"
+    cp -a "$APP_ROOT/public/." "$PUBLIC_DEPLOY_PATH/"
+
+    cat > "$PUBLIC_DEPLOY_PATH/index.php" <<EOF
+<?php
+
+define('LARAVEL_START', microtime(true));
+
+require '$APP_ROOT/vendor/autoload.php';
+
+\$app = require_once '$APP_ROOT/bootstrap/app.php';
+
+\$kernel = \$app->make(Illuminate\Contracts\Http\Kernel::class);
+
+\$response = \$kernel->handle(
+    \$request = Illuminate\Http\Request::capture()
+);
+
+\$response->send();
+
+\$kernel->terminate(\$request, \$response);
+EOF
+  fi
+else
+  echo "[deploy][warn] No se detectó carpeta document root en public_html."
+  echo "[deploy][warn] Define DEPLOY_PUBLIC_PATH en .env, por ejemplo:"
+  echo "[deploy][warn] DEPLOY_PUBLIC_PATH=/home/ligabasq/public_html/registro"
 fi
 
 echo "[deploy] Deploy completado"
