@@ -74,6 +74,9 @@ Tambien deja:
 - `CACHE_STORE=database`
 - `QUEUE_CONNECTION=database`
 
+Sugerencia:
+- parte desde `.env.cpanel.example` y reemplaza los valores reales.
+
 ## 6) Primer deploy
 
 Desde cPanel -> `Git Version Control` -> `Manage`:
@@ -126,3 +129,4 @@ Si tu hosting usa rutas de PHP/Composer no estandar, ajusta `scripts/cpanel_depl
 Nota:
 - `.cpanel.yml` no define como clonar el repo.
 - El tipo de clonacion (SSH/HTTPS) se configura en `Git Version Control` cuando creas el repositorio.
+- Runbook operativo resumido: `IMPLEMENTACION_BASICA_CPANEL.md`.

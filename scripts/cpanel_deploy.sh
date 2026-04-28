@@ -6,6 +6,7 @@ cd "$APP_ROOT"
 
 echo "[deploy] Iniciando deploy Laravel en cPanel"
 echo "[deploy] APP_ROOT=$APP_ROOT"
+echo "[deploy] Fecha: $(date '+%Y-%m-%d %H:%M:%S %z')"
 
 PHP_BIN="${PHP_BIN:-php}"
 if ! command -v "$PHP_BIN" >/dev/null 2>&1; then
@@ -19,6 +20,8 @@ elif [ -x "/opt/cpanel/composer/bin/composer" ]; then
   COMPOSER_CMD=(/opt/cpanel/composer/bin/composer)
 elif [ -x "$HOME/composer.phar" ]; then
   COMPOSER_CMD=("$PHP_BIN" "$HOME/composer.phar")
+elif [ -x "$APP_ROOT/composer.phar" ]; then
+  COMPOSER_CMD=("$PHP_BIN" "$APP_ROOT/composer.phar")
 else
   echo "[deploy][error] Composer no está disponible."
   echo "[deploy][hint] Instala Composer o define una ruta válida en el script."
@@ -26,8 +29,38 @@ else
 fi
 
 if [ ! -f .env ]; then
-  echo "[deploy] No existe .env, se crea desde .env.example"
+  echo "[deploy][warn] No existe .env, se crea desde .env.example"
   cp .env.example .env
+  echo "[deploy][error] Debes editar .env en cPanel con datos reales de producción y volver a deploy."
+  exit 1
+fi
+
+required_env_keys=(
+  APP_ENV
+  APP_URL
+  DB_CONNECTION
+  DB_HOST
+  DB_PORT
+  DB_DATABASE
+  DB_USERNAME
+  DB_PASSWORD
+)
+
+for key in "${required_env_keys[@]}"; do
+  if ! grep -q "^${key}=" .env; then
+    echo "[deploy][error] Falta ${key} en .env"
+    exit 1
+  fi
+done
+
+if grep -q '^APP_ENV=local' .env; then
+  echo "[deploy][error] APP_ENV=local detectado. En producción debe ser APP_ENV=production."
+  exit 1
+fi
+
+if grep -q '^APP_DEBUG=true' .env; then
+  echo "[deploy][error] APP_DEBUG=true detectado. En producción debe ser APP_DEBUG=false."
+  exit 1
 fi
 
 echo "[deploy] Instalando dependencias PHP"

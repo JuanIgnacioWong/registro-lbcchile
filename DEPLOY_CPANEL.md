@@ -306,7 +306,9 @@ php artisan view:cache
 
 Para flujo GitHub -> cPanel con `Git Version Control` (pull + deploy), revisa:
 - `DEPLOY_GITHUB_CPANEL.md`
+- `IMPLEMENTACION_BASICA_CPANEL.md`
 
 Ese flujo usa:
 - `.cpanel.yml`
 - `scripts/cpanel_deploy.sh`
+- `.env.cpanel.example`
