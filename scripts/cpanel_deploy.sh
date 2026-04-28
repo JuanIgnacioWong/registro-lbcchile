@@ -23,9 +23,7 @@ elif [ -x "$HOME/composer.phar" ]; then
 elif [ -x "$APP_ROOT/composer.phar" ]; then
   COMPOSER_CMD=("$PHP_BIN" "$APP_ROOT/composer.phar")
 else
-  echo "[deploy][error] Composer no está disponible."
-  echo "[deploy][hint] Instala Composer o define una ruta válida en el script."
-  exit 1
+  COMPOSER_CMD=()
 fi
 
 if [ ! -f .env ]; then
@@ -63,8 +61,17 @@ if grep -q '^APP_DEBUG=true' .env; then
   exit 1
 fi
 
-echo "[deploy] Instalando dependencias PHP"
-"${COMPOSER_CMD[@]}" install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+if [ "${#COMPOSER_CMD[@]}" -gt 0 ]; then
+  echo "[deploy] Instalando dependencias PHP"
+  "${COMPOSER_CMD[@]}" install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+else
+  echo "[deploy][warn] Composer no disponible en servidor. Se usará vendor precompilado."
+  if [ ! -f "$APP_ROOT/vendor/autoload.php" ]; then
+    echo "[deploy][error] No existe vendor/autoload.php."
+    echo "[deploy][hint] Sube la carpeta vendor/ al repositorio o al servidor y vuelve a desplegar."
+    exit 1
+  fi
+fi
 
 if ! grep -q '^APP_KEY=base64:' .env; then
   echo "[deploy] APP_KEY ausente, generando clave"
