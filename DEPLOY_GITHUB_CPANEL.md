@@ -14,7 +14,11 @@ Flujo:
 3. En cPanel: `Deploy HEAD Commit`.
 4. cPanel ejecuta `.cpanel.yml` y corre `scripts/cpanel_deploy.sh`.
 
-## 2) Preparar acceso SSH de cPanel a GitHub
+## 2) Elegir metodo de autenticacion (SSH o HTTPS)
+
+Puedes clonar por dos metodos:
+
+### Opcion A: SSH (recomendado)
 
 En cPanel:
 1. Ve a `SSH Access` y genera una llave SSH si no existe.
@@ -26,12 +30,26 @@ En GitHub:
 3. Pega la llave publica.
 4. Marca `Allow write access` solo si realmente necesitas push desde servidor.
 
+URL SSH correcta:
+- `git@github.com:ORG/REPO.git`
+
+### Opcion B: HTTPS (util si SSH falla)
+
+- Repo publico:
+  - `https://github.com/ORG/REPO.git`
+- Repo privado:
+  - `https://x-access-token:TOKEN_GITHUB@github.com/ORG/REPO.git`
+
+Recomendacion HTTPS para privado:
+- Usa token solo lectura.
+- Token con expiracion corta.
+
 ## 3) Clonar el repo desde cPanel
 
 En cPanel:
 1. Abre `Git Version Control`.
 2. Click `Create`.
-3. En `Clone URL` usa URL SSH de GitHub (ejemplo: `git@github.com:ORG/REPO.git`).
+3. En `Clone URL` usa URL SSH o HTTPS valida (segun opcion elegida).
 4. Define ruta destino (ejemplo: `/home/USUARIO/registro-lbc`).
 5. Crea el repositorio.
 
@@ -104,3 +122,7 @@ Logs utiles:
 - `scripts/cpanel_deploy.sh` contiene todos los pasos de despliegue.
 
 Si tu hosting usa rutas de PHP/Composer no estandar, ajusta `scripts/cpanel_deploy.sh`.
+
+Nota:
+- `.cpanel.yml` no define como clonar el repo.
+- El tipo de clonacion (SSH/HTTPS) se configura en `Git Version Control` cuando creas el repositorio.
