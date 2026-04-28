@@ -62,8 +62,24 @@ if grep -q '^APP_DEBUG=true' .env; then
 fi
 
 if [ "${#COMPOSER_CMD[@]}" -gt 0 ]; then
-  echo "[deploy] Instalando dependencias PHP"
-  "${COMPOSER_CMD[@]}" install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+  if "$PHP_BIN" -m 2>/dev/null | grep -qi '^Phar$'; then
+    echo "[deploy] Instalando dependencias PHP"
+    if ! "${COMPOSER_CMD[@]}" install --no-dev --optimize-autoloader --no-interaction --prefer-dist; then
+      echo "[deploy][warn] Composer falló. Se intentará continuar con vendor precompilado."
+      if [ ! -f "$APP_ROOT/vendor/autoload.php" ]; then
+        echo "[deploy][error] No existe vendor/autoload.php."
+        echo "[deploy][hint] Sube la carpeta vendor/ al repositorio o al servidor y vuelve a desplegar."
+        exit 1
+      fi
+    fi
+  else
+    echo "[deploy][warn] PHP CLI no tiene extensión phar. Se omite Composer."
+    if [ ! -f "$APP_ROOT/vendor/autoload.php" ]; then
+      echo "[deploy][error] No existe vendor/autoload.php."
+      echo "[deploy][hint] Sube la carpeta vendor/ al repositorio o al servidor y vuelve a desplegar."
+      exit 1
+    fi
+  fi
 else
   echo "[deploy][warn] Composer no disponible en servidor. Se usará vendor precompilado."
   if [ ! -f "$APP_ROOT/vendor/autoload.php" ]; then
