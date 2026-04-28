@@ -8,10 +8,20 @@ echo "[deploy] Iniciando deploy Laravel en cPanel"
 echo "[deploy] APP_ROOT=$APP_ROOT"
 echo "[deploy] Fecha: $(date '+%Y-%m-%d %H:%M:%S %z')"
 
+PHP_HAS_PHAR=0
+PHP_HAS_PDO=0
+
 PHP_BIN="${PHP_BIN:-php}"
 if ! command -v "$PHP_BIN" >/dev/null 2>&1; then
   echo "[deploy][error] No se encontró PHP en PATH (PHP_BIN=$PHP_BIN)."
   exit 1
+fi
+
+if "$PHP_BIN" -m 2>/dev/null | grep -qi '^Phar$'; then
+  PHP_HAS_PHAR=1
+fi
+if "$PHP_BIN" -m 2>/dev/null | grep -qi '^PDO$'; then
+  PHP_HAS_PDO=1
 fi
 
 if command -v composer >/dev/null 2>&1; then
@@ -62,7 +72,7 @@ if grep -q '^APP_DEBUG=true' .env; then
 fi
 
 if [ "${#COMPOSER_CMD[@]}" -gt 0 ]; then
-  if "$PHP_BIN" -m 2>/dev/null | grep -qi '^Phar$'; then
+  if [ "$PHP_HAS_PHAR" -eq 1 ]; then
     echo "[deploy] Instalando dependencias PHP"
     if ! "${COMPOSER_CMD[@]}" install --no-dev --optimize-autoloader --no-interaction --prefer-dist; then
       echo "[deploy][warn] Composer falló. Se intentará continuar con vendor precompilado."
@@ -91,24 +101,30 @@ fi
 
 if ! grep -q '^APP_KEY=base64:' .env; then
   echo "[deploy] APP_KEY ausente, generando clave"
-  "$PHP_BIN" artisan key:generate --force
+  CACHE_STORE=file SESSION_DRIVER=file QUEUE_CONNECTION=sync "$PHP_BIN" artisan key:generate --force
 fi
 
-echo "[deploy] Ejecutando migraciones"
-"$PHP_BIN" artisan migrate --force
+if [ "$PHP_HAS_PDO" -eq 1 ]; then
+  echo "[deploy] Ejecutando migraciones"
+  "$PHP_BIN" artisan migrate --force
+else
+  echo "[deploy][warn] PHP CLI sin extensión PDO. Se omiten migraciones."
+fi
 
-if [ "${RUN_SEEDERS:-0}" = "1" ]; then
+if [ "${RUN_SEEDERS:-0}" = "1" ] && [ "$PHP_HAS_PDO" -eq 1 ]; then
   echo "[deploy] Ejecutando seeders (RUN_SEEDERS=1)"
   "$PHP_BIN" artisan db:seed --force
+elif [ "${RUN_SEEDERS:-0}" = "1" ]; then
+  echo "[deploy][warn] RUN_SEEDERS=1 ignorado porque PHP CLI no tiene PDO."
 fi
 
 echo "[deploy] Asegurando symlink de storage"
-"$PHP_BIN" artisan storage:link || true
+CACHE_STORE=file SESSION_DRIVER=file QUEUE_CONNECTION=sync "$PHP_BIN" artisan storage:link || true
 
 echo "[deploy] Limpiando y recacheando"
-"$PHP_BIN" artisan optimize:clear
-"$PHP_BIN" artisan config:cache
-"$PHP_BIN" artisan route:cache
-"$PHP_BIN" artisan view:cache
+CACHE_STORE=file SESSION_DRIVER=file QUEUE_CONNECTION=sync "$PHP_BIN" artisan optimize:clear
+CACHE_STORE=file SESSION_DRIVER=file QUEUE_CONNECTION=sync "$PHP_BIN" artisan config:cache
+CACHE_STORE=file SESSION_DRIVER=file QUEUE_CONNECTION=sync "$PHP_BIN" artisan route:cache
+CACHE_STORE=file SESSION_DRIVER=file QUEUE_CONNECTION=sync "$PHP_BIN" artisan view:cache
 
 echo "[deploy] Deploy completado"
