@@ -10,6 +10,7 @@ echo "[deploy] Fecha: $(date '+%Y-%m-%d %H:%M:%S %z')"
 
 PHP_HAS_PHAR=0
 PHP_HAS_PDO=0
+PHP_HAS_DOM=0
 
 PHP_BIN="${PHP_BIN:-php}"
 if ! command -v "$PHP_BIN" >/dev/null 2>&1; then
@@ -22,6 +23,9 @@ if "$PHP_BIN" -m 2>/dev/null | grep -qi '^Phar$'; then
 fi
 if "$PHP_BIN" -m 2>/dev/null | grep -qi '^PDO$'; then
   PHP_HAS_PDO=1
+fi
+if "$PHP_BIN" -m 2>/dev/null | grep -qi '^dom$'; then
+  PHP_HAS_DOM=1
 fi
 
 if command -v composer >/dev/null 2>&1; then
@@ -100,8 +104,18 @@ else
 fi
 
 if ! grep -q '^APP_KEY=base64:' .env; then
-  echo "[deploy] APP_KEY ausente, generando clave"
-  CACHE_STORE=file SESSION_DRIVER=file QUEUE_CONNECTION=sync "$PHP_BIN" artisan key:generate --force
+  if [ "$PHP_HAS_DOM" -eq 1 ]; then
+    echo "[deploy] APP_KEY ausente, generando clave con artisan"
+    CACHE_STORE=file SESSION_DRIVER=file QUEUE_CONNECTION=sync "$PHP_BIN" artisan key:generate --force
+  else
+    echo "[deploy][warn] APP_KEY ausente. Generando clave sin artisan (PHP CLI sin DOM)."
+    GENERATED_KEY="$("$PHP_BIN" -r 'echo "base64:".base64_encode(random_bytes(32));')"
+    if grep -q '^APP_KEY=' .env; then
+      sed -i.bak "s|^APP_KEY=.*|APP_KEY=${GENERATED_KEY}|" .env && rm -f .env.bak
+    else
+      printf "\nAPP_KEY=%s\n" "$GENERATED_KEY" >> .env
+    fi
+  fi
 fi
 
 if [ "$PHP_HAS_PDO" -eq 1 ]; then
@@ -118,13 +132,23 @@ elif [ "${RUN_SEEDERS:-0}" = "1" ]; then
   echo "[deploy][warn] RUN_SEEDERS=1 ignorado porque PHP CLI no tiene PDO."
 fi
 
-echo "[deploy] Asegurando symlink de storage"
-CACHE_STORE=file SESSION_DRIVER=file QUEUE_CONNECTION=sync "$PHP_BIN" artisan storage:link || true
+if [ "$PHP_HAS_DOM" -eq 1 ]; then
+  echo "[deploy] Asegurando symlink de storage"
+  CACHE_STORE=file SESSION_DRIVER=file QUEUE_CONNECTION=sync "$PHP_BIN" artisan storage:link || true
 
-echo "[deploy] Limpiando y recacheando"
-CACHE_STORE=file SESSION_DRIVER=file QUEUE_CONNECTION=sync "$PHP_BIN" artisan optimize:clear
-CACHE_STORE=file SESSION_DRIVER=file QUEUE_CONNECTION=sync "$PHP_BIN" artisan config:cache
-CACHE_STORE=file SESSION_DRIVER=file QUEUE_CONNECTION=sync "$PHP_BIN" artisan route:cache
-CACHE_STORE=file SESSION_DRIVER=file QUEUE_CONNECTION=sync "$PHP_BIN" artisan view:cache
+  echo "[deploy] Limpiando y recacheando"
+  CACHE_STORE=file SESSION_DRIVER=file QUEUE_CONNECTION=sync "$PHP_BIN" artisan optimize:clear
+  CACHE_STORE=file SESSION_DRIVER=file QUEUE_CONNECTION=sync "$PHP_BIN" artisan config:cache
+  CACHE_STORE=file SESSION_DRIVER=file QUEUE_CONNECTION=sync "$PHP_BIN" artisan route:cache
+  CACHE_STORE=file SESSION_DRIVER=file QUEUE_CONNECTION=sync "$PHP_BIN" artisan view:cache
+else
+  echo "[deploy][warn] PHP CLI sin extensión DOM. Se omiten comandos artisan de mantenimiento."
+  if [ -e "$APP_ROOT/public/storage" ] && [ ! -L "$APP_ROOT/public/storage" ]; then
+    echo "[deploy][warn] public/storage existe y no es symlink. No se reemplaza automáticamente."
+  else
+    ln -sfn "$APP_ROOT/storage/app/public" "$APP_ROOT/public/storage" || true
+    echo "[deploy] Symlink public/storage actualizado por shell."
+  fi
+fi
 
 echo "[deploy] Deploy completado"
