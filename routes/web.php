@@ -22,10 +22,12 @@ Route::post('/inscripcion', [PublicRegistrationController::class, 'store'])
     ->middleware('throttle:public-submission')
     ->name('public.inscription.store');
 
-Route::get('/inscripcion/options/{season}/divisiones', [PublicRegistrationController::class, 'divisionsBySeason'])
+Route::get('/inscripcion/options/{season:id}/divisiones', [PublicRegistrationController::class, 'divisionsBySeason'])
     ->name('public.inscription.divisions');
-Route::get('/inscripcion/options/{season}/{division}/clubes', [PublicRegistrationController::class, 'clubsBySeasonDivision'])
+
+Route::get('/inscripcion/options/{season:id}/{division:id}/clubes', [PublicRegistrationController::class, 'clubsBySeasonDivision'])
     ->name('public.inscription.clubs');
+
 
 Route::get('/inscripcion/plantilla-nomina', [PublicRegistrationController::class, 'downloadRosterTemplate'])
     ->name('public.inscription.template');

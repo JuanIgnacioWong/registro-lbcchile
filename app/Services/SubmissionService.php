@@ -11,6 +11,51 @@ use Illuminate\Validation\ValidationException;
 
 class SubmissionService
 {
+    public function submitPublic(
+        int $seasonId,
+        int $divisionId,
+        int $clubId,
+        string $responsibleName,
+        string $phone,
+        string $email,
+        ?UploadedFile $clubLogo,
+        ?UploadedFile $paymentReceipt,
+        ?UploadedFile $playersRoster,
+        ?string $observations,
+    ): array {
+        return DB::transaction(function () use (
+            $seasonId,
+            $divisionId,
+            $clubId,
+            $responsibleName,
+            $phone,
+            $email,
+            $clubLogo,
+            $paymentReceipt,
+            $playersRoster,
+            $observations
+        ) {
+            $submission = $this->createOrGetSubmission(
+                $seasonId,
+                $divisionId,
+                $clubId,
+                $responsibleName,
+                $phone,
+                $email
+            );
+
+            $version = $this->createVersion(
+                $submission,
+                $clubLogo,
+                $paymentReceipt,
+                $playersRoster,
+                $observations
+            );
+
+            return [$submission->fresh(), $version];
+        });
+    }
+
     public function createOrGetSubmission(
         int $seasonId,
         int $divisionId,
@@ -57,7 +102,7 @@ class SubmissionService
 
             if ($submission->versions_count >= $submission->max_allowed_submissions) {
                 throw ValidationException::withMessages([
-                    'submission' => 'El club ya alcanzó el máximo de envíos permitidos para esta temporada/división.',
+                    'submission' => 'El club ya alcanzo el maximo de envios permitidos para esta temporada/division.',
                 ]);
             }
 
