@@ -62,16 +62,15 @@
                 </select>
             </div>
 
-           <div>
-    <label class="text-sm font-medium">Club</label>
-    <select name="club_id" x-model="clubId" class="mt-1 w-full rounded border-slate-300" required :disabled="!divisionId || !clubs.length">
-        <option value="" x-text="divisionId && !clubs.length ? 'No hay clubes activos para esta division' : 'Selecciona club'"></option>
-        <template x-for="club in clubs" :key="club.id">
-            <option :value="club.id" x-text="club.name"></option>
-        </template>
-    </select>
-</div>
-
+            <div>
+                <label class="text-sm font-medium">Club</label>
+                <select name="club_id" x-model="clubId" class="mt-1 w-full rounded border-slate-300" required :disabled="!divisionId || !clubs.length">
+                    <option value="" x-text="divisionId && !clubs.length ? 'No hay clubes activos para esta division' : 'Selecciona club'"></option>
+                    <template x-for="club in clubs" :key="club.id">
+                        <option :value="club.id" x-text="club.name"></option>
+                    </template>
+                </select>
+            </div>
 
             <div>
                 <label class="text-sm font-medium">Nombre responsable</label>

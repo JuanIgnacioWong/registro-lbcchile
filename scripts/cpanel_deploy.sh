@@ -12,6 +12,9 @@ PHP_HAS_PHAR=0
 PHP_HAS_PDO=0
 PHP_HAS_DOM=0
 PUBLIC_DEPLOY_PATH="${DEPLOY_PUBLIC_PATH:-}"
+APP_URL_VALUE=""
+APP_URL_HOST=""
+APP_URL_FIRST_LABEL=""
 
 PHP_BIN="${PHP_BIN:-php}"
 if ! command -v "$PHP_BIN" >/dev/null 2>&1; then
@@ -29,13 +32,35 @@ if "$PHP_BIN" -m 2>/dev/null | grep -qi '^dom$'; then
   PHP_HAS_DOM=1
 fi
 
+if [ -f .env ]; then
+  APP_URL_VALUE="$(sed -n 's/^APP_URL=//p' .env | head -n 1 | tr -d '"' | tr -d "'")"
+fi
+
+if [ -n "$APP_URL_VALUE" ]; then
+  APP_URL_HOST="$(printf '%s\n' "$APP_URL_VALUE" | sed -E 's#^[a-zA-Z]+://##' | cut -d/ -f1 | cut -d: -f1)"
+  APP_URL_FIRST_LABEL="$(printf '%s\n' "$APP_URL_HOST" | cut -d. -f1)"
+fi
+
 if [ -z "$PUBLIC_DEPLOY_PATH" ]; then
-  for candidate in \
-    "$HOME/public_html/registro.lbcchile.com" \
-    "$HOME/public_html/registro" \
-    "$HOME/public_html/registro-lbcchile" \
+  candidates=()
+  if [ -n "$APP_URL_HOST" ]; then
+    candidates+=("$HOME/public_html/$APP_URL_HOST")
+  fi
+  if [ -n "$APP_URL_FIRST_LABEL" ]; then
+    candidates+=("$HOME/public_html/$APP_URL_FIRST_LABEL")
+  fi
+  candidates+=(
+    "$HOME/public_html/registro.lbcchile.com"
+    "$HOME/public_html/registro"
+    "$HOME/public_html/registro-lbcchile"
     "$HOME/public_html/registro_lbcchile"
-  do
+    "$HOME/public_html/clubes.lbcchile.com"
+    "$HOME/public_html/clubes"
+    "$HOME/public_html/clubes-lbcchile"
+    "$HOME/public_html/clubes_lbcchile"
+  )
+
+  for candidate in "${candidates[@]}"; do
     if [ -d "$candidate" ]; then
       PUBLIC_DEPLOY_PATH="$candidate"
       break
