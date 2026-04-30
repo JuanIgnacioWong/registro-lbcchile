@@ -4,6 +4,8 @@
     <form method="POST" enctype="multipart/form-data" action="{{ route('admin.settings.update') }}" class="max-w-4xl space-y-4 rounded-xl bg-white p-6 shadow-sm">
         @csrf @method('PUT')
         <div><label class="text-sm font-medium">Nombre de plataforma</label><input name="platform_name" value="{{ old('platform_name', $settings['platform_name']) }}" class="mt-1 w-full rounded border-slate-300"></div>
+        <div><label class="text-sm font-medium">Titulo pagina inscripcion</label><input name="inscription_heading" value="{{ old('inscription_heading', $settings['inscription_heading']) }}" class="mt-1 w-full rounded border-slate-300"></div>
+        <div><label class="text-sm font-medium">Subtitulo pagina inscripcion</label><input name="inscription_subheading" value="{{ old('inscription_subheading', $settings['inscription_subheading']) }}" class="mt-1 w-full rounded border-slate-300"></div>
         <div><label class="text-sm font-medium">Logo institucional</label><input type="file" name="institutional_logo" class="mt-1 w-full rounded border-slate-300" accept=".png,.jpg,.jpeg,.webp,.svg"></div>
         <div><label class="text-sm font-medium">URL boton de pago</label><input name="payment_button_url" value="{{ old('payment_button_url', $settings['payment_button_url']) }}" class="mt-1 w-full rounded border-slate-300"></div>
         <div><label class="text-sm font-medium">Texto boton de pago</label><input name="payment_button_text" value="{{ old('payment_button_text', $settings['payment_button_text']) }}" class="mt-1 w-full rounded border-slate-300"></div>

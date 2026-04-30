@@ -1,5 +1,6 @@
 <x-public-layout>
-    <x-slot name="heading">Inscripcion de Clubes</x-slot>
+    <x-slot name="heading">{{ $settings['inscription_heading'] ?? 'Inscripcion de Clubes' }}</x-slot>
+    <x-slot name="subtitle">{{ $settings['inscription_subheading'] ?? 'Plataforma independiente para carga y revision de antecedentes deportivos.' }}</x-slot>
 
     <div class="mb-6 rounded-xl bg-slate-900/70 p-4 shadow-lg">
         <div class="flex flex-wrap items-center gap-3">
