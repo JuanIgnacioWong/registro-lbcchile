@@ -11,6 +11,8 @@ class PlatformSettingsSeeder extends Seeder
     {
         $defaults = [
             'platform_name' => 'Registro LBC Chile',
+            'inscription_heading' => 'Inscripcion de Clubes',
+            'inscription_subheading' => 'Plataforma independiente para carga y revision de antecedentes deportivos.',
             'payment_button_url' => 'https://lbcchile.com/pagos',
             'payment_button_text' => 'Pagar cuota',
             'notification_email' => 'registro@lbcchile.com',

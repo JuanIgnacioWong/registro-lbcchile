@@ -1,5 +1,6 @@
 <x-public-layout>
-    <x-slot name="heading">Inscripcion de Clubes</x-slot>
+    <x-slot name="heading">{{ $settings['inscription_heading'] ?? 'Inscripcion de Clubes' }}</x-slot>
+    <x-slot name="subtitle">{{ $settings['inscription_subheading'] ?? 'Plataforma independiente para carga y revision de antecedentes deportivos.' }}</x-slot>
 
     <div class="mb-6 rounded-xl bg-slate-900/70 p-4 shadow-lg">
         <div class="flex flex-wrap items-center gap-3">
@@ -62,16 +63,15 @@
                 </select>
             </div>
 
-           <div>
-    <label class="text-sm font-medium">Club</label>
-    <select name="club_id" x-model="clubId" class="mt-1 w-full rounded border-slate-300" required :disabled="!divisionId || !clubs.length">
-        <option value="" x-text="divisionId && !clubs.length ? 'No hay clubes activos para esta division' : 'Selecciona club'"></option>
-        <template x-for="club in clubs" :key="club.id">
-            <option :value="club.id" x-text="club.name"></option>
-        </template>
-    </select>
-</div>
-
+            <div>
+                <label class="text-sm font-medium">Club</label>
+                <select name="club_id" x-model="clubId" class="mt-1 w-full rounded border-slate-300" required :disabled="!divisionId || !clubs.length">
+                    <option value="" x-text="divisionId && !clubs.length ? 'No hay clubes activos para esta division' : 'Selecciona club'"></option>
+                    <template x-for="club in clubs" :key="club.id">
+                        <option :value="club.id" x-text="club.name"></option>
+                    </template>
+                </select>
+            </div>
 
             <div>
                 <label class="text-sm font-medium">Nombre responsable</label>

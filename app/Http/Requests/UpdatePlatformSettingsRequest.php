@@ -15,6 +15,8 @@ class UpdatePlatformSettingsRequest extends FormRequest
     {
         return [
             'platform_name' => ['required', 'string', 'max:120'],
+            'inscription_heading' => ['required', 'string', 'max:120'],
+            'inscription_subheading' => ['required', 'string', 'max:220'],
             'institutional_logo' => ['nullable', 'file', 'max:2048', 'mimes:png,jpg,jpeg,webp,svg'],
             'payment_button_url' => ['nullable', 'url', 'max:500'],
             'payment_button_text' => ['required', 'string', 'max:80'],

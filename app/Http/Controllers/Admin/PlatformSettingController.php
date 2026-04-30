@@ -14,6 +14,8 @@ class PlatformSettingController extends Controller
 {
     private const KEYS = [
         'platform_name',
+        'inscription_heading',
+        'inscription_subheading',
         'institutional_logo',
         'payment_button_url',
         'payment_button_text',
@@ -76,6 +78,8 @@ class PlatformSettingController extends Controller
 
         return array_merge([
             'platform_name' => 'Registro LBC Chile',
+            'inscription_heading' => 'Inscripcion de Clubes',
+            'inscription_subheading' => 'Plataforma independiente para carga y revision de antecedentes deportivos.',
             'institutional_logo' => null,
             'payment_button_url' => null,
             'payment_button_text' => 'Pagar cuota',
