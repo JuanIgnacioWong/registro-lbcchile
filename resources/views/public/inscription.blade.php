@@ -44,7 +44,7 @@
         <div class="grid gap-4 md:grid-cols-3">
             <div>
                 <label class="text-sm font-medium">Año / Temporada</label>
-                <select name="season_id" x-model="seasonId" @change="loadDivisions" class="mt-1 w-full rounded border-slate-300" required>
+                <select name="season_id" x-model="seasonId" @change="loadDivisions()" class="mt-1 w-full rounded border-slate-300" required>
                     <option value="">Selecciona temporada</option>
                     @foreach($seasons as $season)
                         <option value="{{ $season->id }}">{{ $season->year }} - {{ $season->name }}</option>
@@ -54,7 +54,7 @@
 
             <div>
                 <label class="text-sm font-medium">Division o categoria</label>
-                <select name="division_id" x-model="divisionId" @change="loadClubs" class="mt-1 w-full rounded border-slate-300" required :disabled="!seasonId">
+                <select name="division_id" x-model="divisionId" @change="loadClubs()" class="mt-1 w-full rounded border-slate-300" required :disabled="!seasonId">
                     <option value="">Selecciona division</option>
                     <template x-for="division in divisions" :key="division.id">
                         <option :value="division.id" x-text="division.name"></option>
@@ -62,15 +62,16 @@
                 </select>
             </div>
 
-            <div>
-                <label class="text-sm font-medium">Club</label>
-                <select name="club_id" x-model="clubId" class="mt-1 w-full rounded border-slate-300" required :disabled="!divisionId">
-                    <option value="">Selecciona club</option>
-                    <template x-for="club in clubs" :key="club.id">
-                        <option :value="club.id" x-text="club.name"></option>
-                    </template>
-                </select>
-            </div>
+           <div>
+    <label class="text-sm font-medium">Club</label>
+    <select name="club_id" x-model="clubId" class="mt-1 w-full rounded border-slate-300" required :disabled="!divisionId || !clubs.length">
+        <option value="" x-text="divisionId && !clubs.length ? 'No hay clubes activos para esta division' : 'Selecciona club'"></option>
+        <template x-for="club in clubs" :key="club.id">
+            <option :value="club.id" x-text="club.name"></option>
+        </template>
+    </select>
+</div>
+
 
             <div>
                 <label class="text-sm font-medium">Nombre responsable</label>

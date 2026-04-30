@@ -36,18 +36,14 @@ class PublicRegistrationController extends Controller
 
     public function store(StorePublicSubmissionRequest $request): RedirectResponse
     {
-        $submission = $this->submissionService->createOrGetSubmission(
-            $request->integer('season_id'),
-            $request->integer('division_id'),
-            $request->integer('club_id'),
-            trim(strip_tags((string) $request->string('responsible_name'))),
-            trim(strip_tags((string) $request->string('phone'))),
-            strtolower(trim((string) $request->string('email'))),
-        );
-
         try {
-            $version = $this->submissionService->createVersion(
-                $submission,
+            [$submission, $version] = $this->submissionService->submitPublic(
+                $request->integer('season_id'),
+                $request->integer('division_id'),
+                $request->integer('club_id'),
+                trim(strip_tags((string) $request->string('responsible_name'))),
+                trim(strip_tags((string) $request->string('phone'))),
+                strtolower(trim((string) $request->string('email'))),
                 $request->file('club_logo'),
                 $request->file('payment_receipt'),
                 $request->file('players_roster'),
@@ -80,14 +76,17 @@ class PublicRegistrationController extends Controller
         ]);
     }
 
-    public function clubsBySeasonDivision(Season $season, Division $division): JsonResponse
+    public function clubsBySeasonDivision(Season $season, int $division): JsonResponse
     {
-        abort_unless($division->season_id === $season->id, 404);
+        $divisionModel = Division::query()
+            ->whereKey($division)
+            ->where('season_id', $season->id)
+            ->firstOrFail();
 
         return response()->json([
             'data' => Club::query()
                 ->where('season_id', $season->id)
-                ->where('division_id', $division->id)
+                ->where('division_id', $divisionModel->id)
                 ->where('is_active', true)
                 ->orderBy('name')
                 ->get(['id', 'name', 'slug']),
