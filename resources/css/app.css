@@ -1,3 +1,41 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+    :root {
+        --brand-primary: #0c2340;
+        --brand-secondary: #1f4e8c;
+        --brand-accent: #35bdfe;
+        --brand-success: #16a34a;
+        --brand-warning: #f59e0b;
+        --brand-danger: #dc2626;
+        --brand-muted: #eef2f7;
+    }
+
+    body {
+        @apply text-slate-800 antialiased;
+    }
+}
+
+@layer components {
+    .panel-card {
+        @apply rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200;
+    }
+
+    .panel-input {
+        @apply mt-1 w-full border-slate-300 text-sm shadow-sm focus:border-sky-500 focus:ring-sky-500;
+    }
+
+    .btn-primary {
+        @apply inline-flex items-center justify-center rounded-xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2;
+    }
+
+    .btn-secondary {
+        @apply inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-300;
+    }
+
+    .badge {
+        @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold;
+    }
+}

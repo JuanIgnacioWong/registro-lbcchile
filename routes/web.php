@@ -23,11 +23,19 @@ Route::post('/inscripcion', [PublicRegistrationController::class, 'store'])
     ->name('public.inscription.store');
 
 Route::get('/inscripcion/options/{season:id}/divisiones', [PublicRegistrationController::class, 'divisionsBySeason'])
+    ->middleware('throttle:public-options')
     ->name('public.inscription.divisions');
 
 Route::get('/inscripcion/options/{season:id}/{division:id}/clubes', [PublicRegistrationController::class, 'clubsBySeasonDivision'])
+    ->middleware('throttle:public-options')
     ->name('public.inscription.clubs');
 
+Route::prefix('api')->middleware('throttle:public-options')->group(function (): void {
+    Route::get('/seasons/{season:id}/divisions', [PublicRegistrationController::class, 'apiDivisionsBySeason'])
+        ->name('api.seasons.divisions');
+    Route::get('/divisions/{division:id}/clubs', [PublicRegistrationController::class, 'apiClubsByDivision'])
+        ->name('api.divisions.clubs');
+});
 
 Route::get('/inscripcion/plantilla-nomina', [PublicRegistrationController::class, 'downloadRosterTemplate'])
     ->name('public.inscription.template');
@@ -39,9 +47,9 @@ Route::post('/correcciones/{year}/{division}/{club}/{token}', [CorrectionSubmiss
     ->middleware('throttle:corrections-submission')
     ->name('public.corrections.store');
 
-Route::get('/dashboard', fn () => redirect()->route('admin.dashboard'))->middleware(['auth','verified'])->name('dashboard');
+Route::get('/dashboard', fn () => redirect()->route('admin.dashboard'))->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::middleware('auth')->group(function () {
+Route::middleware('auth')->group(function (): void {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
@@ -50,7 +58,7 @@ Route::middleware('auth')->group(function () {
 Route::prefix('admin')
     ->middleware(['auth', 'verified', 'admin'])
     ->name('admin.')
-    ->group(function () {
+    ->group(function (): void {
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
         Route::resource('seasons', SeasonController::class)->except('show');

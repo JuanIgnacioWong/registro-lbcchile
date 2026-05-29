@@ -412,7 +412,7 @@ class Arr
 
         $keys = (array) $keys;
 
-        if ($keys === []) {
+        if (count($keys) === 0) {
             return;
         }
 
@@ -1284,11 +1284,8 @@ class Arr
     /**
      * Filter items where the value is not null.
      *
-     * @template TKey of array-key
-     * @template TValue
-     *
-     * @param  array<TKey, TValue|null>  $array
-     * @return array<TKey, TValue>
+     * @param  array  $array
+     * @return array
      */
     public static function whereNotNull($array)
     {

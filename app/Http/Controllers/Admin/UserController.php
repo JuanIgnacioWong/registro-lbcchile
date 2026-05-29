@@ -35,14 +35,17 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:120'],
             'email' => ['required', 'email:rfc,dns', 'max:120', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
-            'role' => ['required', Rule::in(['admin'])],
+            'role' => ['required', Rule::in([User::ROLE_ADMIN, User::ROLE_SUPER_ADMIN])],
+            'is_active' => ['nullable', 'boolean'],
         ]);
 
         $user = User::query()->create([
             'name' => trim(strip_tags($validated['name'])),
-            'email' => strtolower($validated['email']),
+            'email' => strtolower(trim($validated['email'])),
             'password' => Hash::make($validated['password']),
             'role' => $validated['role'],
+            'is_active' => (bool) ($validated['is_active'] ?? true),
+            'email_verified_at' => now(),
         ]);
 
         $this->auditLogger->log($request->user(), 'admin_user_created', 'user', $user->id, 'Usuario administrador creado.');
@@ -61,13 +64,32 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:120'],
             'email' => ['required', 'email:rfc,dns', 'max:120', Rule::unique('users', 'email')->ignore($user->id)],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
-            'role' => ['required', Rule::in(['admin'])],
+            'role' => ['required', Rule::in([User::ROLE_ADMIN, User::ROLE_SUPER_ADMIN])],
+            'is_active' => ['nullable', 'boolean'],
         ]);
+
+        $newRole = $validated['role'];
+        $newActiveState = (bool) ($validated['is_active'] ?? false);
+
+        if ($user->isSuperAdmin() && (! $newActiveState || $newRole !== User::ROLE_SUPER_ADMIN)) {
+            $otherSuperAdmins = User::query()
+                ->where('id', '!=', $user->id)
+                ->where('role', User::ROLE_SUPER_ADMIN)
+                ->where('is_active', true)
+                ->count();
+
+            if ($otherSuperAdmins === 0) {
+                return back()->withErrors([
+                    'role' => 'No se puede desactivar ni quitar el ultimo super admin activo.',
+                ])->withInput();
+            }
+        }
 
         $payload = [
             'name' => trim(strip_tags($validated['name'])),
-            'email' => strtolower($validated['email']),
-            'role' => $validated['role'],
+            'email' => strtolower(trim($validated['email'])),
+            'role' => $newRole,
+            'is_active' => $newActiveState,
         ];
 
         if (! empty($validated['password'])) {
@@ -85,6 +107,18 @@ class UserController extends Controller
     {
         if ((int) request()->user()->id === (int) $user->id) {
             return back()->withErrors(['user' => 'No puedes eliminar tu propio usuario en sesion.']);
+        }
+
+        if ($user->isSuperAdmin()) {
+            $otherSuperAdmins = User::query()
+                ->where('id', '!=', $user->id)
+                ->where('role', User::ROLE_SUPER_ADMIN)
+                ->where('is_active', true)
+                ->count();
+
+            if ($otherSuperAdmins === 0) {
+                return back()->withErrors(['user' => 'No se puede eliminar el ultimo super admin activo.']);
+            }
         }
 
         $userId = $user->id;

@@ -7,6 +7,7 @@ use App\Http\Requests\UpdatePlatformSettingsRequest;
 use App\Models\PlatformSetting;
 use App\Services\AuditLogger;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
@@ -16,6 +17,7 @@ class PlatformSettingController extends Controller
         'platform_name',
         'inscription_heading',
         'inscription_subheading',
+        'inscription_intro_text',
         'institutional_logo',
         'payment_button_url',
         'payment_button_text',
@@ -24,6 +26,11 @@ class PlatformSettingController extends Controller
         'max_file_size_kb',
         'allowed_doc_extensions',
         'allowed_image_extensions',
+        'success_message',
+        'correction_instructions',
+        'brand_primary',
+        'brand_secondary',
+        'brand_accent',
     ];
 
     public function __construct(private readonly AuditLogger $auditLogger)
@@ -64,8 +71,11 @@ class PlatformSettingController extends Controller
                 continue;
             }
 
-            PlatformSetting::query()->updateOrCreate(['key' => $key], ['value' => (string) $payload[$key]]);
+            $value = is_string($payload[$key]) ? trim($payload[$key]) : (string) $payload[$key];
+            PlatformSetting::query()->updateOrCreate(['key' => $key], ['value' => $value]);
         }
+
+        Cache::forget('platform:shared-settings');
 
         $this->auditLogger->log($request->user(), 'platform_settings_updated', 'platform_setting', null, 'Configuracion global actualizada.');
 
@@ -78,8 +88,9 @@ class PlatformSettingController extends Controller
 
         return array_merge([
             'platform_name' => 'Registro LBC Chile',
-            'inscription_heading' => 'Inscripcion de Clubes',
+            'inscription_heading' => 'Inscipción de Clubes',
             'inscription_subheading' => 'Plataforma independiente para carga y revision de antecedentes deportivos.',
+            'inscription_intro_text' => 'Completa los datos institucionales y sube los antecedentes oficiales en un solo envio.',
             'institutional_logo' => null,
             'payment_button_url' => null,
             'payment_button_text' => 'Pagar cuota',
@@ -88,6 +99,11 @@ class PlatformSettingController extends Controller
             'max_file_size_kb' => '10240',
             'allowed_doc_extensions' => 'pdf,xls,xlsx,docx',
             'allowed_image_extensions' => 'png,jpg,jpeg,webp,svg',
+            'success_message' => 'Antecedentes enviados correctamente. Te contactaremos tras la revision administrativa.',
+            'correction_instructions' => 'Este enlace permite subir una correccion oficial para tu club. El sistema conserva todo el historial por version.',
+            'brand_primary' => '#0C2340',
+            'brand_secondary' => '#1F4E8C',
+            'brand_accent' => '#35BDFE',
         ], $stored);
     }
 }

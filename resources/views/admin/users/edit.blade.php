@@ -1,13 +1,20 @@
 <x-admin-layout>
     <x-slot name="heading">Editar Usuario</x-slot>
 
-    <form method="POST" action="{{ route('admin.users.update', $user) }}" class="max-w-2xl space-y-4 rounded-xl bg-white p-6 shadow-sm">
-        @csrf @method('PUT')
-        <div><label class="text-sm font-medium">Nombre</label><input name="name" value="{{ old('name', $user->name) }}" class="mt-1 w-full rounded border-slate-300"></div>
-        <div><label class="text-sm font-medium">Correo</label><input name="email" type="email" value="{{ old('email', $user->email) }}" class="mt-1 w-full rounded border-slate-300"></div>
-        <input type="hidden" name="role" value="admin">
-        <div><label class="text-sm font-medium">Nueva contrasena (opcional)</label><input name="password" type="password" class="mt-1 w-full rounded border-slate-300"></div>
-        <div><label class="text-sm font-medium">Confirmar contrasena</label><input name="password_confirmation" type="password" class="mt-1 w-full rounded border-slate-300"></div>
-        <button class="rounded bg-red-600 px-4 py-2 text-white">Actualizar usuario</button>
-    </form>
+    <x-card title="Datos de acceso">
+        <form method="POST" action="{{ route('admin.users.update', $user) }}" class="max-w-2xl space-y-4">
+            @csrf
+            @method('PUT')
+            <x-input label="Nombre" name="name" :value="old('name', $user->name)" required />
+            <x-input type="email" label="Correo" name="email" :value="old('email', $user->email)" required />
+            <x-select label="Rol" name="role" required>
+                <option value="super_admin" @selected(old('role', $user->role) === 'super_admin')>super_admin</option>
+                <option value="admin" @selected(old('role', $user->role) === 'admin')>admin</option>
+            </x-select>
+            <label class="flex items-center gap-2 text-sm text-slate-700"><input type="checkbox" name="is_active" value="1" {{ old('is_active', $user->is_active) ? 'checked' : '' }}> Usuario activo</label>
+            <x-input type="password" label="Nueva contraseña (opcional)" name="password" />
+            <x-input type="password" label="Confirmar contraseña" name="password_confirmation" />
+            <x-button type="submit">Actualizar usuario</x-button>
+        </form>
+    </x-card>
 </x-admin-layout>

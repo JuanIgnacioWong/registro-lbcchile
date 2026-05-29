@@ -33,14 +33,6 @@ trait InteractsWithDatabase
             return $this;
         }
 
-        if ($data !== [] && array_is_list($data) && array_all($data, fn ($row) => is_array($row))) {
-            foreach ($data as $row) {
-                $this->assertDatabaseHas($table, $row, $connection);
-            }
-
-            return $this;
-        }
-
         if ($table instanceof Model) {
             $data = [
                 $table->getKeyName() => $table->getKey(),
@@ -68,14 +60,6 @@ trait InteractsWithDatabase
         if (is_iterable($table)) {
             foreach ($table as $item) {
                 $this->assertDatabaseMissing($item, $data, $connection);
-            }
-
-            return $this;
-        }
-
-        if ($data !== [] && array_is_list($data) && array_all($data, fn ($row) => is_array($row))) {
-            foreach ($data as $row) {
-                $this->assertDatabaseMissing($table, $row, $connection);
             }
 
             return $this;

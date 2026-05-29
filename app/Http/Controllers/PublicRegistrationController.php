@@ -62,7 +62,9 @@ class PublicRegistrationController extends Controller
             ['submission_id' => $submission->id]
         );
 
-        return back()->with('success', 'Antecedentes enviados correctamente.');
+        $successMessage = PlatformSetting::value('success_message', 'Antecedentes enviados correctamente.');
+
+        return back()->with('success', $successMessage);
     }
 
     public function divisionsBySeason(Season $season): JsonResponse
@@ -81,12 +83,32 @@ class PublicRegistrationController extends Controller
         $divisionModel = Division::query()
             ->whereKey($division)
             ->where('season_id', $season->id)
+            ->where('is_active', true)
             ->firstOrFail();
 
         return response()->json([
             'data' => Club::query()
                 ->where('season_id', $season->id)
                 ->where('division_id', $divisionModel->id)
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get(['id', 'name', 'slug']),
+        ]);
+    }
+
+    public function apiDivisionsBySeason(Season $season): JsonResponse
+    {
+        return $this->divisionsBySeason($season);
+    }
+
+    public function apiClubsByDivision(Division $division): JsonResponse
+    {
+        abort_unless($division->is_active, 404);
+
+        return response()->json([
+            'data' => Club::query()
+                ->where('season_id', $division->season_id)
+                ->where('division_id', $division->id)
                 ->where('is_active', true)
                 ->orderBy('name')
                 ->get(['id', 'name', 'slug']),

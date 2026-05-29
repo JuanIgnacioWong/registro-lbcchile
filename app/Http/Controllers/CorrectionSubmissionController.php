@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreCorrectionSubmissionRequest;
 use App\Models\CorrectionLink;
+use App\Models\PlatformSetting;
 use App\Models\Submission;
 use App\Services\AuditLogger;
 use App\Services\SubmissionService;
@@ -36,6 +37,7 @@ class CorrectionSubmissionController extends Controller
         return view('public.correction', [
             'link' => $link,
             'submission' => $submission,
+            'settings' => PlatformSetting::query()->pluck('value', 'key')->all(),
         ]);
     }
 
@@ -80,7 +82,7 @@ class CorrectionSubmissionController extends Controller
             ->where('token', $token)
             ->firstOrFail();
 
-        abort_unless($link->isValidToken($token), 403, 'Token invalido o inactivo.');
+        abort_unless($link->isValidToken($token), 403, 'Token invalido, inactivo o vencido.');
         abort_unless((string) $link->season->year === $year, 404);
         abort_unless($link->division->slug === $division, 404);
         abort_unless($link->club->slug === $club, 404);

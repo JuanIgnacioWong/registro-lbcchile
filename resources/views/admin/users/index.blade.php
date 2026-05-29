@@ -1,27 +1,44 @@
 <x-admin-layout>
     <x-slot name="heading">Usuarios</x-slot>
 
-    <div class="mb-4 flex justify-end"><a href="{{ route('admin.users.create') }}" class="rounded bg-red-600 px-4 py-2 text-white">Nuevo usuario</a></div>
-
-    <div class="overflow-hidden rounded-xl bg-white shadow-sm">
-        <table class="min-w-full text-sm">
-            <thead class="bg-slate-50"><tr><th class="px-4 py-3 text-left">Nombre</th><th class="px-4 py-3 text-left">Correo</th><th class="px-4 py-3 text-left">Rol</th><th class="px-4 py-3 text-center">Acciones</th></tr></thead>
-            <tbody>
-            @forelse($users as $user)
-                <tr class="border-t">
-                    <td class="px-4 py-3">{{ $user->name }}</td>
-                    <td class="px-4 py-3">{{ $user->email }}</td>
-                    <td class="px-4 py-3">{{ $user->role }}</td>
-                    <td class="px-4 py-3 text-center">
-                        <a class="text-blue-600" href="{{ route('admin.users.edit', $user) }}">Editar</a>
-                        <form method="POST" class="inline" action="{{ route('admin.users.destroy', $user) }}">@csrf @method('DELETE')<button class="ml-2 text-red-600" onclick="return confirm('Eliminar usuario?')">Eliminar</button></form>
-                    </td>
-                </tr>
-            @empty
-                <tr><td class="px-4 py-4 text-slate-500" colspan="4">Sin usuarios.</td></tr>
-            @endforelse
-            </tbody>
-        </table>
+    <div class="flex justify-end">
+        <a href="{{ route('admin.users.create') }}" class="btn-primary">Nuevo usuario</a>
     </div>
-    <div class="mt-4">{{ $users->links() }}</div>
+
+    <x-card>
+        @if($users->isEmpty())
+            <x-empty-state title="Sin usuarios" description="Crea administradores autorizados para operar el panel." />
+        @else
+            <x-table>
+                <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <tr>
+                        <th class="px-4 py-3">Nombre</th>
+                        <th class="px-4 py-3">Correo</th>
+                        <th class="px-4 py-3">Rol</th>
+                        <th class="px-4 py-3">Estado</th>
+                        <th class="px-4 py-3 text-right">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($users as $user)
+                        <tr class="border-t border-slate-100">
+                            <td class="px-4 py-3 font-semibold">{{ $user->name }}</td>
+                            <td class="px-4 py-3">{{ $user->email }}</td>
+                            <td class="px-4 py-3">{{ $user->role }}</td>
+                            <td class="px-4 py-3"><x-badge :tone="$user->is_active ? 'success' : 'muted'">{{ $user->is_active ? 'Activo' : 'Inactivo' }}</x-badge></td>
+                            <td class="px-4 py-3 text-right text-sm">
+                                <a href="{{ route('admin.users.edit', $user) }}" class="text-sky-700 hover:underline">Editar</a>
+                                <form method="POST" class="inline" action="{{ route('admin.users.destroy', $user) }}" onsubmit="return confirm('¿Eliminar usuario?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button class="ml-2 text-red-700 hover:underline">Eliminar</button>
+                                </form>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </x-table>
+            <div class="mt-4">{{ $users->links() }}</div>
+        @endif
+    </x-card>
 </x-admin-layout>

@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateSubmissionPaymentStatusRequest;
+use App\Models\Club;
+use App\Models\Division;
 use App\Models\Season;
 use App\Models\Submission;
 use App\Models\SubmissionVersion;
@@ -24,7 +26,7 @@ class SubmissionController extends Controller
     public function index(Request $request): View
     {
         $query = Submission::query()
-            ->with(['season', 'division', 'club'])
+            ->with(['season', 'division', 'club', 'versions' => fn ($q) => $q->latest('version_number')->limit(1)])
             ->withCount('versions');
 
         if ($request->filled('season_id')) {
@@ -43,17 +45,38 @@ class SubmissionController extends Controller
             $query->where('payment_status', (string) $request->query('payment_status'));
         }
 
+        if ($request->filled('submission_status')) {
+            $query->whereHas('versions', function ($subQuery) use ($request): void {
+                $subQuery
+                    ->whereColumn('submission_versions.submission_id', 'submissions.id')
+                    ->where('status', (string) $request->query('submission_status'));
+            });
+        }
+
         if ($request->filled('from_date')) {
-            $query->whereDate('created_at', '>=', (string) $request->query('from_date'));
+            $query->whereDate('updated_at', '>=', (string) $request->query('from_date'));
         }
 
         if ($request->filled('to_date')) {
-            $query->whereDate('created_at', '<=', (string) $request->query('to_date'));
+            $query->whereDate('updated_at', '<=', (string) $request->query('to_date'));
+        }
+
+        if ($request->filled('q')) {
+            $search = trim((string) $request->query('q'));
+            $query->where(function ($subQuery) use ($search): void {
+                $subQuery
+                    ->where('responsible_name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhereHas('club', fn ($clubQuery) => $clubQuery->where('name', 'like', "%{$search}%"));
+            });
         }
 
         return view('admin.submissions.index', [
-            'submissions' => $query->latest()->paginate(20)->withQueryString(),
+            'submissions' => $query->latest('updated_at')->paginate(20)->withQueryString(),
             'seasons' => Season::query()->orderByDesc('year')->get(),
+            'divisions' => Division::query()->orderBy('name')->get(),
+            'clubs' => Club::query()->orderBy('name')->get(),
         ]);
     }
 

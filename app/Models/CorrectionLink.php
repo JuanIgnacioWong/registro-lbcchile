@@ -46,7 +46,7 @@ class CorrectionLink extends Model
 
     public function isValidToken(string $token): bool
     {
-        if ($this->token !== $token || ! $this->is_active) {
+        if (! hash_equals($this->token, $token) || ! $this->is_active) {
             return false;
         }
 

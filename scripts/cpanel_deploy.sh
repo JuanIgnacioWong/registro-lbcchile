@@ -11,10 +11,13 @@ echo "[deploy] Fecha: $(date '+%Y-%m-%d %H:%M:%S %z')"
 PHP_HAS_PHAR=0
 PHP_HAS_PDO=0
 PHP_HAS_DOM=0
+HAS_NPM=0
 PUBLIC_DEPLOY_PATH="${DEPLOY_PUBLIC_PATH:-}"
 APP_URL_VALUE=""
 APP_URL_HOST=""
 APP_URL_FIRST_LABEL=""
+RUN_NPM_BUILD="${RUN_NPM_BUILD:-0}"
+RUN_MIGRATIONS="${RUN_MIGRATIONS:-1}"
 
 PHP_BIN="${PHP_BIN:-php}"
 if ! command -v "$PHP_BIN" >/dev/null 2>&1; then
@@ -30,6 +33,9 @@ if "$PHP_BIN" -m 2>/dev/null | grep -qi '^PDO$'; then
 fi
 if "$PHP_BIN" -m 2>/dev/null | grep -qi '^dom$'; then
   PHP_HAS_DOM=1
+fi
+if command -v npm >/dev/null 2>&1; then
+  HAS_NPM=1
 fi
 
 if [ -f .env ]; then
@@ -143,6 +149,20 @@ else
   fi
 fi
 
+if [ "$RUN_NPM_BUILD" = "1" ]; then
+  if [ "$HAS_NPM" -eq 1 ]; then
+    echo "[deploy] RUN_NPM_BUILD=1 detectado, compilando assets frontend"
+    if [ -f package-lock.json ]; then
+      npm ci --no-audit --no-fund
+    else
+      npm install --no-audit --no-fund
+    fi
+    npm run build
+  else
+    echo "[deploy][warn] RUN_NPM_BUILD=1 pero npm no está disponible. Se usarán assets precompilados."
+  fi
+fi
+
 if ! grep -q '^APP_KEY=base64:' .env; then
   if [ "$PHP_HAS_DOM" -eq 1 ]; then
     echo "[deploy] APP_KEY ausente, generando clave con artisan"
@@ -158,11 +178,13 @@ if ! grep -q '^APP_KEY=base64:' .env; then
   fi
 fi
 
-if [ "$PHP_HAS_PDO" -eq 1 ]; then
-  echo "[deploy] Ejecutando migraciones"
+if [ "$RUN_MIGRATIONS" = "1" ] && [ "$PHP_HAS_PDO" -eq 1 ]; then
+  echo "[deploy] Ejecutando migraciones (RUN_MIGRATIONS=1)"
   "$PHP_BIN" artisan migrate --force
+elif [ "$RUN_MIGRATIONS" = "1" ]; then
+  echo "[deploy][warn] RUN_MIGRATIONS=1 ignorado porque PHP CLI no tiene PDO."
 else
-  echo "[deploy][warn] PHP CLI sin extensión PDO. Se omiten migraciones."
+  echo "[deploy] Migraciones desactivadas (RUN_MIGRATIONS=0). Se reutiliza esquema actual de base de datos."
 fi
 
 if [ "${RUN_SEEDERS:-0}" = "1" ] && [ "$PHP_HAS_PDO" -eq 1 ]; then
@@ -192,6 +214,8 @@ else
 fi
 
 if [ -n "$PUBLIC_DEPLOY_PATH" ]; then
+  echo "[deploy] APP_URL host detectado: ${APP_URL_HOST:-desconocido}"
+  echo "[deploy] DEPLOY_PUBLIC_PATH resuelto: $PUBLIC_DEPLOY_PATH"
   REPO_PUBLIC_REALPATH="$(cd "$APP_ROOT/public" && pwd)"
   TARGET_PUBLIC_REALPATH="$(cd "$PUBLIC_DEPLOY_PATH" 2>/dev/null && pwd || true)"
 

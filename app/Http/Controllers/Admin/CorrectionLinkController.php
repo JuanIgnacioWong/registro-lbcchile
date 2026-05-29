@@ -11,7 +11,6 @@ use App\Models\Season;
 use App\Services\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class CorrectionLinkController extends Controller
@@ -39,7 +38,7 @@ class CorrectionLinkController extends Controller
             'season_id' => $request->integer('season_id'),
             'division_id' => $request->integer('division_id'),
             'club_id' => $request->integer('club_id'),
-            'token' => Str::random(64),
+            'token' => bin2hex(random_bytes(32)),
             'is_active' => true,
             'expires_at' => $request->input('expires_at'),
         ]);
@@ -70,7 +69,7 @@ class CorrectionLinkController extends Controller
     public function regenerate(Request $request, CorrectionLink $correctionLink): RedirectResponse
     {
         $correctionLink->update([
-            'token' => Str::random(64),
+            'token' => bin2hex(random_bytes(32)),
             'is_active' => true,
         ]);
 

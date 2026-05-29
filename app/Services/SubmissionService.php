@@ -7,6 +7,7 @@ use App\Models\SubmissionVersion;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class SubmissionService
@@ -98,6 +99,7 @@ class SubmissionService
         ?string $observations,
     ): SubmissionVersion {
         return DB::transaction(function () use ($submission, $clubLogo, $paymentReceipt, $playersRoster, $observations) {
+            $submission->load(['season', 'division', 'club']);
             $submission->loadCount('versions');
 
             if ($submission->versions_count >= $submission->max_allowed_submissions) {
@@ -109,18 +111,18 @@ class SubmissionService
             $versionNumber = $submission->versions_count + 1;
             $latestVersion = $submission->versions()->latest('version_number')->first();
 
-            $baseFolder = "submissions/{$submission->id}/v{$versionNumber}";
+            $baseFolder = $this->buildVersionBaseFolder($submission, $versionNumber);
 
             $clubLogoPath = $clubLogo
-                ? $clubLogo->storeAs($baseFolder, 'club_logo.'.$clubLogo->extension(), 'local')
+                ? $clubLogo->storeAs($baseFolder, 'logo.'.$clubLogo->extension(), 'local')
                 : $latestVersion?->club_logo_path;
 
             $paymentReceiptPath = $paymentReceipt
-                ? $paymentReceipt->storeAs($baseFolder, 'payment_receipt.'.$paymentReceipt->extension(), 'local')
+                ? $paymentReceipt->storeAs($baseFolder, 'comprobante.'.$paymentReceipt->extension(), 'local')
                 : $latestVersion?->payment_receipt_path;
 
             $playersRosterPath = $playersRoster
-                ? $playersRoster->storeAs($baseFolder, 'players_roster.'.$playersRoster->extension(), 'local')
+                ? $playersRoster->storeAs($baseFolder, 'nomina.'.$playersRoster->extension(), 'local')
                 : $latestVersion?->players_roster_path;
 
             $version = $submission->versions()->create([
@@ -134,7 +136,7 @@ class SubmissionService
 
             $submission->update([
                 'active_version' => $submission->active_version ?: $versionNumber,
-                'payment_status' => $paymentReceiptPath ? 'in_review' : $submission->payment_status,
+                'payment_status' => $paymentReceipt ? 'in_review' : $submission->payment_status,
             ]);
 
             return $version;
@@ -143,7 +145,7 @@ class SubmissionService
 
     public function markAccepted(SubmissionVersion $version): void
     {
-        DB::transaction(function () use ($version) {
+        DB::transaction(function () use ($version): void {
             $submission = $version->submission()->firstOrFail();
 
             $submission->versions()
@@ -164,7 +166,7 @@ class SubmissionService
 
     public function deleteVersion(SubmissionVersion $version): void
     {
-        DB::transaction(function () use ($version) {
+        DB::transaction(function () use ($version): void {
             foreach (['club_logo_path', 'payment_receipt_path', 'players_roster_path'] as $column) {
                 $path = $version->{$column};
 
@@ -183,5 +185,14 @@ class SubmissionService
                 $submission->update(['active_version' => $latest?->version_number]);
             }
         });
+    }
+
+    private function buildVersionBaseFolder(Submission $submission, int $versionNumber): string
+    {
+        $season = (string) ($submission->season->year ?? 'temporada');
+        $division = Str::slug((string) ($submission->division->slug ?: $submission->division->name));
+        $club = Str::slug((string) ($submission->club->slug ?: $submission->club->name));
+
+        return "submissions/{$season}/{$division}/{$club}/version-{$versionNumber}";
     }
 }

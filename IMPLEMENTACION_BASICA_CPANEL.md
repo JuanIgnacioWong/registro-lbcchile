@@ -1,56 +1,34 @@
-# Implementacion Basica Completa (cPanel + GitHub)
+# Runbook Básico cPanel
 
-Este documento es el runbook operativo minimo para publicar y mantener la app en cPanel.
+## Objetivo
+Publicar y mantener la plataforma de clubes en `clubes.lbcchile.com`.
 
-## 1) Una sola vez (setup inicial)
+## Pasos mínimos
+1. Crear subdominio `clubes.lbcchile.com`.
+2. Crear base de datos y usuario MySQL.
+3. Clonar repo en `/home/USUARIO/registro-lbc`.
+4. Configurar `.env` de producción.
+5. Ejecutar deploy (`Deploy HEAD Commit` o script manual).
 
-1. Crear subdominio `registro.lbcchile.com`.
-2. Document root: `/home/USUARIO/registro-lbc/public`.
-3. Crear DB y usuario con permisos totales.
-4. En `Git Version Control`, crear repo con URL:
-   - Publico: `https://github.com/ORG/REPO.git`
-   - Privado: `https://x-access-token:TOKEN@github.com/ORG/REPO.git`
-5. Confirmar que existe `.cpanel.yml` en el root del repo.
-6. Crear `.env` en servidor usando `.env.cpanel.example` como base.
+## Script de deploy
+```bash
+/bin/bash scripts/cpanel_deploy.sh
+```
 
-## 2) Primer despliegue
-
-1. En cPanel -> `Git Version Control` -> `Manage`.
-2. Click `Update from Remote`.
-3. Click `Deploy HEAD Commit`.
-4. Revisar logs de deploy.
-5. Si es primer deploy y necesitas datos base, ejecutar seeders con `RUN_SEEDERS=1`.
-
-## 3) Despliegues normales (cada cambio)
-
-1. `git push` a `main` en GitHub.
-2. En cPanel: `Update from Remote`.
-3. En cPanel: `Deploy HEAD Commit`.
-4. Validar `/inscripcion` y login admin.
-
-## 4) Que hace automaticamente el deploy
-
-El script `scripts/cpanel_deploy.sh`:
-- valida que `.env` exista y no este en modo local/debug
-- instala dependencias PHP sin dev
-- genera `APP_KEY` si falta
+## Qué hace
+- valida entorno
+- instala dependencias PHP si Composer está disponible
 - corre migraciones
-- recrea caches Laravel
-- asegura `storage:link`
+- aplica cachés Laravel
+- sincroniza `public/` con document root
 
-## 5) Cuando falla el deploy
+## Primer arranque
+Si necesitas datos base:
+```bash
+RUN_SEEDERS=1 /bin/bash scripts/cpanel_deploy.sh
+```
 
-1. Revisar `storage/logs/laravel.log`.
-2. Revisar log de cPanel (`vc_*_git_deploy.log`).
-3. Verificar `.env`:
-   - `APP_ENV=production`
-   - `APP_DEBUG=false`
-   - DB_* correctos
-4. Reintentar deploy desde `Manage`.
-
-## 6) Seguridad minima obligatoria
-
-- No subir `.env` a GitHub.
-- Token HTTPS solo lectura y con expiracion.
-- Rotar token si se expone.
-- Cambiar password del admin inicial tras primer login.
+## Verificaciones
+- `https://clubes.lbcchile.com/inscripcion`
+- Login admin y navegación `/admin`
+- Subida de antecedentes + revisión desde panel

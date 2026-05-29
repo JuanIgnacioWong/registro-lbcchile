@@ -182,17 +182,9 @@ class UrlGenerator implements UrlGeneratorContract
      */
     public function previousPath($fallback = false)
     {
-        $previousPath = parse_url($this->previous($fallback), PHP_URL_PATH);
+        $previousPath = str_replace($this->to('/'), '', rtrim(preg_replace('/\?.*/', '', $this->previous($fallback)), '/'));
 
-        if (! is_string($previousPath) || $previousPath === '') {
-            return '/';
-        }
-
-        $basePath = parse_url($this->to('/'), PHP_URL_PATH) ?: '';
-
-        $previousPath = $basePath !== '/' ? preg_replace('#^'.preg_quote($basePath, '#').'#', '', $previousPath) : $previousPath;
-
-        return rtrim($previousPath, '/') ?: '/';
+        return $previousPath === '' ? '/' : $previousPath;
     }
 
     /**
@@ -483,10 +475,16 @@ class UrlGenerator implements UrlGeneratorContract
 
         $keys = is_array($keys) ? $keys : [$keys];
 
+        $signature = $request->query('signature');
+
+        if (! is_string($signature)) {
+            return false;
+        }
+
         foreach ($keys as $key) {
             if (hash_equals(
                 hash_hmac('sha256', $original, $key),
-                (string) $request->query('signature', '')
+                $signature
             )) {
                 return true;
             }

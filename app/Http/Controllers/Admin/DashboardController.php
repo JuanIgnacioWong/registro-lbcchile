@@ -23,13 +23,19 @@ class DashboardController extends Controller
                 ->whereIn('status', ['received', 'under_review'])
                 ->where('version_number', '>', 1)
                 ->count(),
+            'rejected_versions' => SubmissionVersion::query()->where('status', 'rejected')->count(),
+            'accepted_versions' => SubmissionVersion::query()->where('status', 'accepted')->count(),
         ];
-
-        $seasons = Season::query()->orderByDesc('year')->get();
 
         return view('admin.dashboard', [
             'kpis' => $kpis,
-            'seasons' => $seasons,
+            'seasons' => Season::query()->orderByDesc('year')->get(),
+            'recentSubmissions' => Submission::query()
+                ->with(['season', 'division', 'club', 'versions' => fn ($query) => $query->latest('version_number')->limit(1)])
+                ->withCount('versions')
+                ->latest('updated_at')
+                ->limit(10)
+                ->get(),
         ]);
     }
 }

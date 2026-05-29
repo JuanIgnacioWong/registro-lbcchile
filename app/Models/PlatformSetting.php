@@ -19,4 +19,9 @@ class PlatformSetting extends Model
 
         return $setting?->value ?? $default;
     }
+
+    public static function values(array $keys): array
+    {
+        return static::query()->whereIn('key', $keys)->pluck('value', 'key')->all();
+    }
 }
