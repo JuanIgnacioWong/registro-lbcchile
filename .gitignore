@@ -24,6 +24,7 @@
 /storage/framework/sessions/*
 /storage/framework/views/*
 /vendor
+/composer.phar
 _ide_helper.php
 Homestead.json
 Homestead.yaml
